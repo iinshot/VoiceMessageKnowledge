@@ -1,0 +1,31 @@
+# Виртуальное окружение
+venv/
+.venv/
+env/
+.env
+
+# Файлы Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Файлы IDE (но оставляем .idea, если хотим сохранить настройки проекта)
+# .idea/  # раскомментируйте, если не хотите сохранять настройки PyCharm
+
+# Аудио файлы
+*.wav
+*.mp3
+*.ogg
+*.opus
+*.flac
+
+# Секреты
+.env
+config.py
+secrets.py
+
+# OS
+.DS_Store
+Thumbs.db
