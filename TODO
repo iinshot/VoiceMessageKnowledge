@@ -1,0 +1,9 @@
+1. Обернуть каждую модель в FastAPI с одним эндпоинтом POST /predict.
+
+2. Написать Dockerfile для каждой (установка зависимостей из своего requirements.txt).
+
+3. Собрать docker-compose.yml на локальном компьютере и проверить связь.
+
+4. Перенести файлы на сервер (scp или git clone).
+
+5. Запустить: docker compose up -d --build.

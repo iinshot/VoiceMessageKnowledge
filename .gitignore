@@ -1,28 +1,25 @@
-# Виртуальное окружение
-venv/
-.venv/
-env/
-.env
+*.pt
+*.bin
+*.pth
+*.ckpt
+*.h5
+*.pb
+*.onnx
 
-# Файлы Python
-__pycache__/
-*.py[cod]
-*$py.class
-*.so
-.Python
+stt_model/model/
+stt_model/silero_vad/
+stt_model/venv/
+ass_model/models/
+ass_model/.venv-ass-model/
 
-# Аудио файлы
+data/
 *.wav
-*.mp3
 *.ogg
-*.opus
-*.flac
+*.mp3
+*.csv
+*.json
 
-# Секреты
+__pycache__/
 .env
-config.py
-secrets.py
-
-# OS
-.DS_Store
-Thumbs.db
+*.env
+.idea/
