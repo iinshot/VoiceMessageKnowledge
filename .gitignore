@@ -9,8 +9,8 @@
 stt_model/model/
 stt_model/silero_vad/
 stt_model/venv/
-ass_model/models/
-ass_model/.venv-ass-model/
+ASS_model/models/
+ASS_model/.venv-ass-model/
 
 data/
 *.wav

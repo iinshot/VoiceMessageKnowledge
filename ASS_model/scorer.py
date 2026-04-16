@@ -361,7 +361,7 @@ class StudentAnswerScorer:
 
 if __name__ == "__main__":
     scorer = StudentAnswerScorer(
-        model_dir = "models/siamese_rubert_s_128",
+        model_dir ="../ASS_model/models/siamese_rubert_s_128",
         weights   = {"w1": 0.8, "w2": 0.1, "w3": 0.1},
     )
 

@@ -70,15 +70,15 @@ python build_idf.py
 from scorer import StudentAnswerScorer
 
 scorer = StudentAnswerScorer(
-    model_dir = "models/siamese_rubert_s_128",
-    weights   = {"w1": 0.78, "w2": 0.2, "w3": 0.02},
+    model_dir="../ass_model/models/siamese_rubert_s_128",
+    weights={"w1": 0.78, "w2": 0.2, "w3": 0.02},
 )
 
 result = scorer.score(
-    question  = "Что такое большие данные?",
-    reference = "Большие данные — это наборы данных большого объёма и высокой скорости накопления, для обработки которых недостаточно традиционных методов. Характеризуются моделью 4V: Volume, Velocity, Variety, Veracity.",
-    student   = "Большие данные это огромные объёмы информации которые сложно обработать стандартными инструментами.",
-    verbose   = True,
+    question="Что такое большие данные?",
+    reference="Большие данные — это наборы данных большого объёма и высокой скорости накопления, для обработки которых недостаточно традиционных методов. Характеризуются моделью 4V: Volume, Velocity, Variety, Veracity.",
+    student="Большие данные это огромные объёмы информации которые сложно обработать стандартными инструментами.",
+    verbose=True,
 )
 
 print(result)
