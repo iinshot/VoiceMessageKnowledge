@@ -11,6 +11,7 @@ stt_model/silero_vad/
 stt_model/venv/
 ASS_model/models/
 ASS_model/.venv-ass-model/
+bot/venv-bot
 
 data/
 *.wav
