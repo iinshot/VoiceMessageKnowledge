@@ -6,12 +6,12 @@
 *.pb
 *.onnx
 
-stt_model/model/
-stt_model/silero_vad/
-stt_model/venv/
+STT_model/model/
+STT_model/silero_vad/
+STT_model/.venv-voice-to-text/
 ASS_model/models/
 ASS_model/.venv-ass-model/
-bot/venv-bot
+bot/.venv-bot
 
 data/
 *.wav
