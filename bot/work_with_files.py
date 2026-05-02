@@ -6,11 +6,11 @@ import os
 def read_questions(questions_file):
     with open(questions_file, 'r', encoding='utf-8-sig') as file:
         reader = csv.DictReader(file)
-        unique_questions = set(row["Вопрос"] for row in reader)
-    return unique_questions
+        questions = {row["Вопрос"]: row["Эталонный ответ преподавателя"] for row in reader}
+    return questions
 
 counter_lock = threading.Lock()
-COUNTER_FILE = "../data/question_files/counter.json"
+COUNTER_FILE = os.getenv("COUNTER_FILE")
 
 def get_next_counter(question):
     with counter_lock:
