@@ -188,7 +188,7 @@ def parse_args():
     parser = argparse.ArgumentParser(description="ASR + Diarization + Beam Search + Punctuation")
 
     parser.add_argument("--audio", "-a",
-                        default="D:/CoursePaper/my_recorded_waw/record_20251209_211331.wav")
+                        default="D:/CoursePaper/my_recorded_wav/record_20251209_211331.wav")
     parser.add_argument("--model", "-m",
                         default="D:/CoursePaper/Speech-to-Text-main/model/wav2vec2_finetuned_subset_002")
     parser.add_argument("--out", "-o",
