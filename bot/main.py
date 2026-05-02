@@ -19,6 +19,7 @@ from work_with_files import (
     get_next_counter,
     format_question_for_filename
 )
+from services_client import transcribe_wav, score_answer
 
 load_dotenv()
 BOT_TOKEN = os.getenv("TELEGRAM_TOKEN")
@@ -29,15 +30,15 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-AUDIO_DIR = "../data/my_recorded_waw"
-ANSWER_DIR = "../data/final_texts"
+AUDIO_DIR = os.getenv("STT_RECORD_DIR")
+ANSWER_DIR = os.getenv("STT_OUTPUT_DIR")
 os.makedirs(AUDIO_DIR, exist_ok=True)
 os.makedirs(ANSWER_DIR, exist_ok=True)
 MAIN_MENU, CHOOSE_DIFFICULTY, WAITING_VOICE, WAITING_CORRECTION = range(4)
 DIFFICULTY_FILES = {
-    "Лёгкий": "../data/question_files/questions_easy.csv",
-    "Средний": "../data/question_files/questions_medium.csv",
-    "Сложный": "../data/question_files/questions_hard.csv",
+    "Лёгкий": "data/question_files/questions_easy.csv",
+    "Средний": "data/question_files/questions_medium.csv",
+    "Сложный": "data/question_files/questions_hard.csv",
 }
 
 async def post_init(application: Application) -> None:
@@ -71,13 +72,12 @@ async def handle_main_menu(update: Update, context: ContextTypes.DEFAULT_TYPE) -
 
     elif text == "Я всемогущий":
         context.user_data["difficulty"] = "всемогущий"
-        all_questions = set()
-
+        all_questions = {}
         for path in DIFFICULTY_FILES.values():
             all_questions.update(read_questions(path))
-
-        question = random.choice(list(all_questions))
+        question = random.choice(list(all_questions.keys()))
         context.user_data["current_question"] = question
+        context.user_data["reference_answer"] = all_questions[question]
         await update.message.reply_text(
             f"Отлично! Готов к самым сложным вопросам.\n\n"
             f"Вопрос: {question}\n\n"
@@ -90,8 +90,9 @@ async def handle_difficulty(update: Update, context: ContextTypes.DEFAULT_TYPE) 
     difficulty = update.message.text
     context.user_data["difficulty"] = difficulty
     questions = read_questions(DIFFICULTY_FILES[difficulty])
-    question = random.choice(list(questions))
+    question = random.choice(list(questions.keys()))
     context.user_data["current_question"] = question
+    context.user_data["reference_answer"] = questions[question]
 
     await update.message.reply_text(
         f"Выбран уровень: {difficulty}\n\n"
@@ -124,90 +125,83 @@ async def handle_voice(update: Update, context: ContextTypes.DEFAULT_TYPE) -> in
 
     success = convert_ogg_to_wav(ogg_path, wav_path)
 
-    if success:
-        await update.message.reply_text("Конвертация завершена!")
-        with open(wav_path, "rb") as wav_file:
-            await update.message.reply_audio(
-                audio=wav_file,
-                filename=f"{filename}.wav",
-            )
-        logger.info(f"WAV отправлен пользователю: {wav_path}")
-    else:
+    if not success:
         await update.message.reply_text("Ошибка при конвертации. Попробуй ещё раз.")
+        return WAITING_VOICE
 
-    if os.path.exists(ogg_path):
-        os.remove(ogg_path)
+    await update.message.reply_text("Конвертация завершена! Распознаю речь...")
+
+    try:
+        recognized_text = await transcribe_wav(wav_path)
+    except Exception as e:
+        logger.error(f"Ошибка STT: {e}")
+        await update.message.reply_text("Ошибка распознавания речи. Попробуй ещё раз.")
+        return WAITING_VOICE
+    finally:
+        for path in [ogg_path, wav_path]:
+            if os.path.exists(path):
+                os.remove(path)
 
     txt_path = os.path.join(ANSWER_DIR, f"{filename}.txt")
     context.user_data["txt_path"] = txt_path
+    context.user_data["recognized_text"] = recognized_text
 
-    if os.path.exists(txt_path):
-        with open(txt_path, "r", encoding="utf-8") as f:
-            recognized_text = f.read().strip()
+    with open(txt_path, "w", encoding="utf-8") as f:
+        f.write(recognized_text)
 
-        context.user_data["recognized_text"] = recognized_text
-
-        keyboard = [["Корректно", "Исправить"]]
-        reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
-        await update.message.reply_text(
-            f"Распознанный текст:\n\n{recognized_text}\n\nКорректно ли бот понял вас?",
-            reply_markup=reply_markup
-        )
-        return WAITING_CORRECTION
-    else:
-        await update.message.reply_text("Текстовый файл не найден. Попробуй ещё раз.")
-        return WAITING_VOICE
+    keyboard = [["Корректно", "Исправить"]]
+    reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
+    await update.message.reply_text(
+        f"Распознанный текст:\n\n{recognized_text}\n\nКорректно ли бот понял вас?",
+        reply_markup=reply_markup
+    )
+    return WAITING_CORRECTION
 
 async def handle_unexpected(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await update.message.reply_text(
         "Отправь голосовое сообщение"
     )
 
-async def handle_correction_choice(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+async def handle_correction_choice(update, context):
     text = update.message.text
-
     if text == "Корректно":
         recognized_text = context.user_data.get("recognized_text", "")
-        txt_path = context.user_data.get("txt_path", "")
-
-        with open(txt_path, "w", encoding="utf-8") as f:
-            f.write(recognized_text)
-
-        keyboard = [["Выбрать уровень сложности", "Я всемогущий"]]
-        reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
-        await update.message.reply_text(
-            "Ответ принят! ✅",
-            reply_markup=reply_markup
-        )
-        return MAIN_MENU
-
+        return await _finalize_answer(update, context, recognized_text)
     elif text == "Исправить":
         recognized_text = context.user_data.get("recognized_text", "")
         await update.message.reply_text(
-            "Отредактируйте текст и отправьте исправленную версию:",
-            reply_markup=ForceReply(
-                force_reply=True,
-                input_field_placeholder=recognized_text
-            )
+            "Скопируйте текст ниже, исправьте и отправьте исправленную версию:",
+            reply_markup=ForceReply(selective=True)
         )
+        await update.message.reply_text(recognized_text)
         return WAITING_CORRECTION
 
-
-async def handle_corrected_text(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+async def handle_corrected_text(update, context):
     corrected_text = update.message.text
+    return await _finalize_answer(update, context, corrected_text)
+
+async def _finalize_answer(update, context, final_text):
     txt_path = context.user_data.get("txt_path", "")
+    question = context.user_data.get("current_question", "")
+    reference = context.user_data.get("reference_answer", "")
 
     with open(txt_path, "w", encoding="utf-8") as f:
-        f.write(corrected_text)
+        f.write(final_text)
 
-    logger.info(f"Текст обновлён в файле: {txt_path}")
+    try:
+        result = await score_answer(question, reference, final_text)
+        grade = result["grade"]
+        await update.message.reply_text(
+            f"Ответ принят!\n\n"
+            f"Оценка: {grade}/5\n"
+        )
+    except Exception as e:
+        logger.error(f"Ошибка оценки: {e}")
+        await update.message.reply_text("Ответ принят! (оценка недоступна)")
 
     keyboard = [["Выбрать уровень сложности", "Я всемогущий"]]
     reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
-    await update.message.reply_text(
-        "Ответ принят!",
-        reply_markup=reply_markup
-    )
+    await update.message.reply_text("Выберите следующее действие:", reply_markup=reply_markup)
     return MAIN_MENU
 
 def main() -> None:
