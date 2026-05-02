@@ -1,0 +1,88 @@
+networks:
+  voice_net:
+    driver: bridge
+
+services:
+  # STT SERVICE — Speech-to-Text
+  # Принимает .wav, возвращает текст.
+  # Endpoint: POST http://stt_service:8001/transcribe
+  stt_service:
+    build:
+      context: ./STT_model
+      dockerfile: Dockerfile
+    container_name: stt_service
+    restart: unless-stopped
+    networks:
+      - voice_net
+    ports:
+      - "8001:8001"
+    volumes:
+      - ./STT_model/model:/model:ro
+      - ./STT_model/silero_vad:/silero_vad:ro
+      - ~/.cache/huggingface:/root/.cache/huggingface
+      - ./data:/data
+    environment:
+      STT_MODEL_DIR: ${STT_MODEL_DIR}
+      SILERO_DIR: ${SILERO_DIR}
+      STT_OUTPUT_DIR: ${STT_OUTPUT_DIR}
+      STT_RECORD_DIR: ${STT_RECORD_DIR}
+      LM_PATH: ${LM_PATH}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # ASS MODEL — оценка ответов студентов
+  # Принимает вопрос + эталон + ответ, возвращает оценку.
+  # Endpoint: POST http://ass_model:8002/score
+  ass_service:
+    build:
+      context: ./ASS_model
+      dockerfile: Dockerfile
+    container_name: ass_service
+    restart: unless-stopped
+    networks:
+      - voice_net
+    ports:
+      - "8002:8002"
+    volumes:
+      - ./ASS_model/models:/models:ro
+      - ./data:/data:ro
+    environment:
+      MODEL_DIR: ${ASS_MODEL_DIR}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8002/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # BOT — Telegram бот
+  # Общается с пользователем, дёргает stt_service и ass_model по HTTP.
+  bot_service:
+    build:
+      context: ./bot
+      dockerfile: Dockerfile
+    container_name: bot_service
+    restart: unless-stopped
+    networks:
+      - voice_net
+    depends_on:
+      stt_service:
+        condition: service_healthy
+      ass_service:
+        condition: service_healthy
+    volumes:
+      - ./data/question_files:/app/data/question_files:ro
+      - ./data/answer_files:/app/data/answer_files
+      - ./data/audio_files:/app/data/audio_files
+      - ./data/answer_files/counter.json:/app/data/answer_files/counter.json
+    environment:
+      TELEGRAM_TOKEN: ${TELEGRAM_TOKEN}
+      STT_URL: ${STT_URL}
+      ASS_URL: ${ASS_URL}
+      STT_OUTPUT_DIR: ${STT_OUTPUT_DIR}
+      STT_RECORD_DIR: ${STT_RECORD_DIR}
+      COUNTER_FILE: ${COUNTER_FILE}
