@@ -34,7 +34,7 @@ echo -e "${NC}"
 
 # ── рабочая директория — там где лежит скрипт ─────────────────────────────────
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-VENV_DIR="$SCRIPT_DIR/venv"
+VENV_DIR="$SCRIPT_DIR/.venv-voice-to-text"
 info "Директория проекта: $SCRIPT_DIR"
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -67,13 +67,13 @@ if [ -d "$VENV_DIR" ]; then
     read -p "Пересоздать? (y/N): " RECREATE
     if [[ "$RECREATE" =~ ^[Yy]$ ]]; then
         rm -rf "$VENV_DIR"
-        $PYTHON -m venv venv-voice-to-text "$VENV_DIR"
+        $PYTHON -m venv "$VENV_DIR"
         ok "venv пересоздан"
     else
         ok "Используем существующий venv"
     fi
 else
-    $PYTHON -m venv venv-voice-to-text "$VENV_DIR"
+    $PYTHON -m venv "$VENV_DIR"
     ok "venv создан: $VENV_DIR"
 fi
 
