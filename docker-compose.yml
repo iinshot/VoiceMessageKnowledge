@@ -7,9 +7,7 @@ services:
   # Принимает .wav, возвращает текст.
   # Endpoint: POST http://stt_service:8001/transcribe
   stt_service:
-    build:
-      context: ./STT_model
-      dockerfile: Dockerfile
+    image: laareyna/stt_service:latest
     container_name: stt_service
     restart: unless-stopped
     networks:
@@ -38,9 +36,7 @@ services:
   # Принимает вопрос + эталон + ответ, возвращает оценку.
   # Endpoint: POST http://ass_model:8002/score
   ass_service:
-    build:
-      context: ./ASS_model
-      dockerfile: Dockerfile
+    image: laareyna/ass_service:latest
     container_name: ass_service
     restart: unless-stopped
     networks:
@@ -62,9 +58,7 @@ services:
   # BOT — Telegram бот
   # Общается с пользователем, дёргает stt_service и ass_model по HTTP.
   bot_service:
-    build:
-      context: ./bot
-      dockerfile: Dockerfile
+    image: laareyna/bot_service:latest
     container_name: bot_service
     restart: unless-stopped
     networks:
