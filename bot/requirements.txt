@@ -4,6 +4,11 @@ h11==0.16.0
 httpcore==1.0.9
 httpx==0.28.1
 idna==3.11
+numpy==2.4.4
+pandas==3.0.2
+python-dateutil==2.9.0.post0
 python-dotenv==1.2.2
 python-telegram-bot==22.7
+six==1.17.0
+socksio==1.0.0
 typing_extensions==4.15.0
