@@ -68,6 +68,8 @@ services:
         condition: service_healthy
       ass_service:
         condition: service_healthy
+    extra_hosts:
+      - ${PROXY_URL}
     volumes:
       - ./data/question_files:/app/data/question_files:ro
       - ./data/answer_files:/app/data/answer_files
