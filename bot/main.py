@@ -138,9 +138,8 @@ async def handle_voice(update: Update, context: ContextTypes.DEFAULT_TYPE) -> in
         await update.message.reply_text("Ошибка распознавания речи. Попробуй ещё раз.")
         return WAITING_VOICE
     finally:
-        for path in [ogg_path, wav_path]:
-            if os.path.exists(path):
-                os.remove(path)
+        if os.path.exists(ogg_path):
+            os.remove(ogg_path)
 
     txt_path = os.path.join(ANSWER_DIR, f"{filename}.txt")
     context.user_data["txt_path"] = txt_path
